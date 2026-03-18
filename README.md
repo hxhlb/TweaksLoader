@@ -7,19 +7,29 @@ No substrate, no ellekit — pure ObjC runtime hooking injected into SpringBoard
 
 ## Preview
 
-![](media/IMG_2827.PNG)
-![](media/IMG_2828.PNG)
-![](media/IMG_2829.PNG)
-![](media/IMG_2830.PNG)
-![](media/IMG_2831.PNG)
-![](media/IMG_2832.PNG)
-![](media/IMG_2833.PNG)
-![](media/IMG_2834.PNG)
-![](media/IMG_2835.PNG)
-![](media/IMG_2836.PNG)
-![](media/IMG_2837.PNG)
-![](media/IMG_2838.PNG)
-![](media/IMG_2839.PNG)
+<table>
+  <tr>
+    <td><img src="media/IMG_2827.PNG" width="200"/></td>
+    <td><img src="media/IMG_2828.PNG" width="200"/></td>
+    <td><img src="media/IMG_2829.PNG" width="200"/></td>
+    <td><img src="media/IMG_2830.PNG" width="200"/></td>
+  </tr>
+  <tr>
+    <td><img src="media/IMG_2831.PNG" width="200"/></td>
+    <td><img src="media/IMG_2832.PNG" width="200"/></td>
+    <td><img src="media/IMG_2833.PNG" width="200"/></td>
+    <td><img src="media/IMG_2834.PNG" width="200"/></td>
+  </tr>
+  <tr>
+    <td><img src="media/IMG_2835.PNG" width="200"/></td>
+    <td><img src="media/IMG_2836.PNG" width="200"/></td>
+    <td><img src="media/IMG_2837.PNG" width="200"/></td>
+    <td><img src="media/IMG_2838.PNG" width="200"/></td>
+  </tr>
+  <tr>
+    <td><img src="media/IMG_2839.PNG" width="200"/></td>
+  </tr>
+</table>
 
 ---
 
@@ -28,7 +38,7 @@ No substrate, no ellekit — pure ObjC runtime hooking injected into SpringBoard
 ### Floating Dock
 iPad-style floating dock on iPhone.
 
-### Page Animations (Cylinder style)
+### Page Animations
 8 home screen page-swipe animation styles — Cube, Wave, Tilt 3D, Fade, Spiral, Float, Smooth, None.
 
 ### Icon Roundness
@@ -44,38 +54,38 @@ Liquid glass effect on notification banners.
 Custom clock font, size, alignment, split mode, and date label.
 
 ### Control Center
-Apple device info button and mini file browser button injected into the CC overlay.
+Apple device info button and mini file browser injected into the CC overlay.
 
-### Mini File Browser (Fiddler-style)
-Navigate the filesystem from SpringBoard. Read, edit, and save files — including binary plists decoded to XML. Long-press the floating button to open.
+### Mini File Browser
+Navigate the filesystem from SpringBoard. Read, edit, and save files — binary plists decoded to XML automatically. Long-press the floating button to open.
 
 ### Mini Terminal
 SpringBoard-based terminal with native ObjC commands — no posix_spawn.  
-Commands: `ls`, `cd`, `cat`, `find`, `grep`, `echo`, `ps`, `env`, `stat`, `uname`, `df`, `head`, `tail`, `mkdir`, `touch`, `rm`, `date`, `whoami`, `id`, `neofetch`, `clear`, `pwd`.  
-Floating window, draggable, save log to disk.  
-Enable via the Settings panel toggle.
+`ls` `cd` `cat` `find` `grep` `echo` `ps` `env` `stat` `uname` `df` `head` `tail` `mkdir` `touch` `rm` `date` `whoami` `id` `neofetch` `clear` `pwd`  
+Floating, draggable window. Save log to disk. Enable via the Settings panel toggle.
 
 ### MobileGestalt Editor
-Write directly to `com.apple.MobileGestalt.plist` from SpringBoard.  
-Tweaks include:
+Write directly to `com.apple.MobileGestalt.plist` from SpringBoard.
 
-- Dynamic Island (14 Pro / 14 Pro Max / 15 Pro Max / 16 Pro / 16 Pro Max)
-- iPhone X Gestures
-- Boot Chime
-- 80% Charge Limit
-- Tap to Wake (SE)
-- Action Button
-- Always On Display
-- Apple Pencil Support
-- Apple Internal (Metal HUD)
-- Disable Wallpaper Parallax
-- Collision SOS
-- Camera Button (iPhone 16)
-- Stage Manager
-- iPadOS Full (CacheExtra + CacheData auto-patch)
-- Apple Intelligence
+| Tweak | Key |
+|---|---|
+| Dynamic Island (14 Pro / 14 Pro Max / 15 Pro Max / 16 Pro / 16 Pro Max) | `ArtworkDeviceSubType` |
+| iPhone X Gestures | `ArtworkDeviceSubType` |
+| Boot Chime | `QHxt+hGLaBPbQJbXiUJX3w` |
+| 80% Charge Limit | `37NVydb//GP/GrhuTN+exg` |
+| Tap to Wake | `yZf3GTRMGTuwSV/lD7Cagw` |
+| Action Button | `cT44WE1EohiwRzhsZ8xEsw` |
+| Always On Display | `2OOJf1VhaM7NxfRok3HbWQ` |
+| Apple Pencil Support | `yhHcB0iH0d1XzPO/CFd3ow` |
+| Apple Internal (Metal HUD) | `EqrsVvjcYDdxHBiQmGhAWw` |
+| Disable Wallpaper Parallax | `UIParallaxCapability` |
+| Collision SOS | `HCzWusHQwZDea6nNhaKndw` |
+| Camera Button (iPhone 16) | `CwvKxM2cEogD3p+HYgaW0Q` |
+| Stage Manager | `qeaj75wk3HF4DwQ8qbIi7g` |
+| iPadOS Full (CacheExtra + CacheData auto-patch) | multiple |
+| Apple Intelligence | `A62OafQ85EJAiiqKn4agtg` |
 
-Includes backup/restore and respring.
+Includes backup, restore, and respring.
 
 ---
 
@@ -103,6 +113,6 @@ Thanks to all original tweak authors. This project would not exist without their
 
 ## Notes
 
-- Source is not included for now soon i will update. dylib only.
+- Source is not included for now. Binary only. Source release coming soon.
 - MobileGestalt tweaks require a respring to apply.
-- Some tweaks (Stage Manager, iPadOS) are marked risky — use with caution.
+- Stage Manager and iPadOS mode are marked risky — use with caution.
