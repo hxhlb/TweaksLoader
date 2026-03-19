@@ -72,6 +72,7 @@ typedef struct { CGFloat cornerRadius; CGFloat blurAlpha; CGFloat borderAlpha; C
 static const LGParams LGParamsDock   = {26.0f, 0.55f, 0.25f, 18.0f, 0.35f};
 static const LGParams LGParamsBanner = {14.0f, 0.45f, 0.30f, 12.0f, 0.30f};
 static const LGParams LGParamsCC     = {22.0f, 0.78f, 0.35f, 20.0f, 0.40f};
+static const LGParams LGParamsMedia  = {20.0f, 0.65f, 0.30f, 16.0f, 0.35f};
 
 static void ALGApplyLiquidGlass(UIView *v, LGParams p) {
     if (!v || v.bounds.size.width < 10) return;
@@ -156,6 +157,11 @@ static void hookMethod(const char *cls, SEL sel, IMP imp, IMP *orig) {
 @interface CALayer (ALGPrivate)
 @property (assign) BOOL continuousCorners;
 @end
+
+// Media player / Now Playing
+@interface CSAdjunctItemView : UIView @end
+@interface CSAdjunctListItem : NSObject @end
+@interface SBLockScreenNowPlayingController : NSObject @end
 
 @interface NCNotificationRequest : NSObject
 @property (nonatomic,copy,readonly) NSString *sectionIdentifier;
@@ -1093,6 +1099,24 @@ static void ALGSetupSettingsButton(void) {
     lbl.textColor = [UIColor whiteColor]; lbl.textAlignment = NSTextAlignmentCenter;
     lbl.userInteractionEnabled = NO;
     [btn addSubview:lbl];
+
+
+    if (@available(iOS 13.0,*)) {
+        UIImage *gearImg = [UIImage systemImageNamed:@"gearshape.fill"
+            withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium]];
+        UIImageView *gearIV = [[UIImageView alloc] initWithImage:gearImg];
+        gearIV.tintColor = [UIColor whiteColor];
+        gearIV.frame = CGRectMake((size-24)/2, (size-24)/2, 24, 24);
+        gearIV.contentMode = UIViewContentModeScaleAspectFit;
+        gearIV.userInteractionEnabled = NO;
+        [btn addSubview:gearIV];
+    } else {
+        UILabel *lbl = [[UILabel alloc] initWithFrame:CGRectMake(0,0,size,size)];
+        lbl.text = @"⚙"; lbl.font = [UIFont systemFontOfSize:22];
+        lbl.textColor = [UIColor whiteColor]; lbl.textAlignment = NSTextAlignmentCenter;
+        lbl.userInteractionEnabled = NO;
+        [btn addSubview:lbl];
+    }
 
     UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:btn action:@selector(handlePan:)];
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:btn action:@selector(handleTap:)];
@@ -4023,7 +4047,7 @@ static void ALGShowDeviceInfoModal(void) {
     cbG.startPoint = CGPointMake(0,0); cbG.endPoint = CGPointMake(1,1);
     [closeBtn.layer addSublayer:cbG];
     UILabel *cbL = [[UILabel alloc] initWithFrame:CGRectMake(0,0,120,38)];
-    cbL.text = @"Cerrar"; cbL.font = [UIFont systemFontOfSize:13 weight:UIFontWeightSemibold];
+    cbL.text = @"Close"; cbL.font = [UIFont systemFontOfSize:13 weight:UIFontWeightSemibold];
     cbL.textColor = [UIColor whiteColor]; cbL.textAlignment = NSTextAlignmentCenter;
     cbL.userInteractionEnabled = NO; [closeBtn addSubview:cbL];
     __weak UIView *wBg = bg;
@@ -4059,7 +4083,6 @@ static CGFloat ALGCCModuleRadius(UIView *v) {
 static void ALGApplyGlassToCC(UIView *view) {
     if (!view || view.bounds.size.width < 10) return;
     CGFloat r = ALGCCModuleRadius(view);
-    // Usar ALGApplyLiquidGlass que ya existe en el proyecto
     LGParams p = LGParamsCC;
     p.cornerRadius = r;
     ALGApplyLiquidGlass(view, p);
@@ -6090,6 +6113,62 @@ static void ALGShowGestaltEditor(void) {
         completion:nil];
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// NOW PLAYING / MEDIA PLAYER — Liquid Glass
+// Hook multiple classes because iOS versions use different ones:
+// - CSAdjunctItemView: lockscreen now playing widget (iOS 14+)
+// - Various media container views in CC
+// ═══════════════════════════════════════════════════════════════
+
+static void ALGApplyMediaGlass(UIView *view) {
+    if (!view || view.bounds.size.width < 50 || view.bounds.size.height < 30) return;
+    // Check if already applied recently (avoid redundant work)
+    NSNumber *applied = objc_getAssociatedObject(view, "algMediaGlass");
+    CGFloat lastW = [objc_getAssociatedObject(view, "algMediaW") floatValue];
+    if (applied && lastW == view.bounds.size.width) return;
+    objc_setAssociatedObject(view, "algMediaGlass", @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(view, "algMediaW", @(view.bounds.size.width), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+    LGParams p = LGParamsMedia;
+    p.cornerRadius = view.layer.cornerRadius > 0 ? view.layer.cornerRadius : 20.0f;
+
+    // Hide the system's own background material if present
+    for (UIView *sub in view.subviews) {
+        NSString *cls = NSStringFromClass([sub class]);
+        if ([cls containsString:@"Material"] || [cls containsString:@"Backdrop"] ||
+            [cls containsString:@"PlatterView"] || [cls containsString:@"BackgroundView"]) {
+            sub.alpha = 0;
+        }
+    }
+
+    ALGApplyLiquidGlass(view, p);
+}
+
+// Hook: CSAdjunctItemView — the lockscreen now playing widget
+static IMP orig_adjunctLayout = NULL;
+static void hooked_adjunctLayout(UIView *self, SEL _cmd) {
+    if (orig_adjunctLayout) ((void(*)(id,SEL))orig_adjunctLayout)(self, _cmd);
+    @try { ALGApplyMediaGlass(self); } @catch(NSException *e) {}
+}
+
+// Hook: Generic media container views that might appear in CC
+static IMP orig_mediaContainerLayout = NULL;
+static void hooked_mediaContainerLayout(UIView *self, SEL _cmd) {
+    if (orig_mediaContainerLayout) ((void(*)(id,SEL))orig_mediaContainerLayout)(self, _cmd);
+    @try { ALGApplyMediaGlass(self); } @catch(NSException *e) {}
+}
+
+// Hook: MRPlatterViewController for CC media widget
+static IMP orig_mrPlatterViewDidLayout = NULL;
+static void hooked_mrPlatterViewDidLayout(UIViewController *self, SEL _cmd) {
+    if (orig_mrPlatterViewDidLayout) ((void(*)(id,SEL))orig_mrPlatterViewDidLayout)(self, _cmd);
+    @try {
+        UIView *v = self.view;
+        if (v && v.bounds.size.width > 50) ALGApplyMediaGlass(v);
+    } @catch(NSException *e) {}
+}
+
 __attribute__((constructor))
 static void AldazTweaksLoaderInit(void) {
 
@@ -6178,6 +6257,33 @@ static void AldazTweaksLoaderInit(void) {
         hookMethod(dateClasses[i], @selector(layoutSubviews),
                    (IMP)hooked_lsDateLayout, &orig_lsDateLayout);
     NSLog(@"[AldazDev] OK: Date hook: %s", orig_lsDateLayout ? "OK" : "MISS");
+
+    // Now Playing / Media player — liquid glass
+    // CSAdjunctItemView: lockscreen now playing widget
+    hookMethod("CSAdjunctItemView", @selector(layoutSubviews),
+               (IMP)hooked_adjunctLayout, &orig_adjunctLayout);
+    // MRPlatterViewController: CC media controls
+    hookMethod("MRPlatterViewController", @selector(viewDidLayoutSubviews),
+               (IMP)hooked_mrPlatterViewDidLayout, &orig_mrPlatterViewDidLayout);
+    // Alternative media views across iOS versions
+    const char *mediaClasses[] = {
+        "MediaControlsContainerView",
+        "MRUNowPlayingView", 
+        "CSAdjunctListView",
+        NULL
+    };
+    for (int i = 0; mediaClasses[i]; i++) {
+        Class mc = objc_getClass(mediaClasses[i]);
+        if (mc) {
+            Method m = class_getInstanceMethod(mc, @selector(layoutSubviews));
+            if (m && !orig_mediaContainerLayout) {
+                orig_mediaContainerLayout = method_getImplementation(m);
+                method_setImplementation(m, (IMP)hooked_mediaContainerLayout);
+                NSLog(@"[AldazDev] OK: Media glass hooked via: %s", mediaClasses[i]);
+            }
+        }
+    }
+    NSLog(@"[AldazDev] OK: Media/NowPlaying hooks done");
 
     // Notificaciones
     hookMethod("NCNotificationShortLookViewController",
